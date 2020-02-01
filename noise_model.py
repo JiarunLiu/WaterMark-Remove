@@ -4,6 +4,8 @@ import random
 import numpy as np
 import cv2
 
+from PIL import Image
+
 
 def get_noise_model(noise_type="gaussian,0,50"):
     tokens = noise_type.split(sep=",")
@@ -49,6 +51,36 @@ def get_noise_model(noise_type="gaussian,0,50"):
                     break
             return img
         return add_text
+    elif tokens[0] == "watermark":
+        # min_occupancy = int(tokens[1])
+        # max_occupancy = int(tokens[2])
+
+        # watermark = Image.open('./watermark.png')  # 水印路径
+        def add_watermark(img, random_fractor=0.1):
+            img = img.copy()
+            TRANSPARENCY = random.randint(28, 82)
+
+            image = Image.fromarray(img)
+            watermark = Image.open('./watermark.png')  # 水印路径
+
+            if watermark.mode != 'RGBA':
+                alpha = Image.new('L', watermark.size, 255)
+                watermark.putalpha(alpha)
+
+            # random paste
+            random_X = random.randint(-750, 45)
+            random_Y = random.randint(-500, 30)
+
+            # random scale in (-20%, 20%)
+            SCALE_FRACTOR = (random.randint(0, 4000) / 10000) + 0.8  # 1 + (random_fractor - 0.2)
+            watermark = watermark.resize((watermark.size[0]*SCALE_FRACTOR, watermark.size[1]*SCALE_FRACTOR),
+                                         Image.ANTIALIAS)
+
+            paste_mask = watermark.split()[3].point(lambda i: i * TRANSPARENCY / 100.)
+            image.paste(watermark, (random_X , random_Y ), mask=paste_mask)
+
+            return image
+        return add_watermark
     elif tokens[0] == "impulse":
         min_occupancy = int(tokens[1])
         max_occupancy = int(tokens[2])

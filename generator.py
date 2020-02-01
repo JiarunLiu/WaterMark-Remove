@@ -5,6 +5,32 @@ import cv2
 from keras.utils import Sequence
 
 
+def resize_img(img, min_side=900):
+    size = img.shape
+    h, w = size[0], size[1]
+    # 长边缩放为min_side
+    scale = max(w, h) / float(min_side)
+    new_w, new_h = int(w / scale), int(h / scale)
+    resize_img = cv2.resize(img, (new_w, new_h))
+    # 填充至min_side * min_side
+    if new_w % 2 != 0 and new_h % 2 == 0:
+        top, bottom, left, right = (min_side - new_h) / 2, (min_side - new_h) / 2, (min_side - new_w) / 2 + 1, (
+                min_side - new_w) / 2
+    elif new_h % 2 != 0 and new_w % 2 == 0:
+        top, bottom, left, right = (min_side - new_h) / 2 + 1, (min_side - new_h) / 2, (min_side - new_w) / 2, (
+                min_side - new_w) / 2
+    elif new_h % 2 == 0 and new_w % 2 == 0:
+        top, bottom, left, right = (min_side - new_h) / 2, (min_side - new_h) / 2, (min_side - new_w) / 2, (
+                min_side - new_w) / 2
+    else:
+        top, bottom, left, right = (min_side - new_h) / 2 + 1, (min_side - new_h) / 2, (min_side - new_w) / 2 + 1, (
+                min_side - new_w) / 2
+    pad_img = cv2.copyMakeBorder(resize_img, int(top), int(bottom), int(left), int(right), cv2.BORDER_CONSTANT,
+                                 value=[0, 0, 0])  # 从图像边界向上,下,左,右扩的像素数目
+
+    return pad_img
+
+
 class NoisyImageGenerator(Sequence):
     def __init__(self, image_dir, source_noise_model, target_noise_model, batch_size=32, image_size=64):
         image_suffixes = (".jpeg", ".jpg", ".png", ".bmp")
@@ -37,6 +63,7 @@ class NoisyImageGenerator(Sequence):
                 h, w, _ = image.shape
                 i = np.random.randint(h - image_size + 1)
                 j = np.random.randint(w - image_size + 1)
+                # crop a random patch in src image, like random crop
                 clean_patch = image[i:i + image_size, j:j + image_size]
                 x[sample_id] = self.source_noise_model(clean_patch)
                 y[sample_id] = self.target_noise_model(clean_patch)
@@ -45,7 +72,21 @@ class NoisyImageGenerator(Sequence):
 
                 if sample_id == batch_size:
                     return x, y
+            else:
+                image = resize_img(image, min_side=image_size)
 
+                h, w, _ = image.shape
+                i = np.random.randint(h - image_size + 1)
+                j = np.random.randint(w - image_size + 1)
+                # crop a random patch in src image, like random crop
+                clean_patch = image[i:i + image_size, j:j + image_size]
+                x[sample_id] = self.source_noise_model(clean_patch)
+                y[sample_id] = self.target_noise_model(clean_patch)
+
+                sample_id += 1
+
+                if sample_id == batch_size:
+                    return x, y
 
 class ValGenerator(Sequence):
     def __init__(self, image_dir, val_noise_model):
