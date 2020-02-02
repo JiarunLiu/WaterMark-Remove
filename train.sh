@@ -1,0 +1,1 @@
+python train.py --image_dir ./train2017 --test_dir ./train2017 --image_size 900 --batch_size 2
