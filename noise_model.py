@@ -61,7 +61,7 @@ def get_noise_model(noise_type="gaussian,0,50"):
             TRANSPARENCY = random.randint(28, 82)
 
             image = Image.fromarray(img)
-            watermark = Image.open('./watermark.png')  # 水印路径
+            watermark = Image.open('./WaterMark/WaterMark-100.png')  # 水印路径
 
             if watermark.mode != 'RGBA':
                 alpha = Image.new('L', watermark.size, 255)
@@ -73,7 +73,7 @@ def get_noise_model(noise_type="gaussian,0,50"):
 
             # random scale in (-20%, 20%)
             SCALE_FRACTOR = (random.randint(0, 4000) / 10000) + 0.8  # 1 + (random_fractor - 0.2)
-            watermark = watermark.resize((watermark.size[0]*SCALE_FRACTOR, watermark.size[1]*SCALE_FRACTOR),
+            watermark = watermark.resize((int(watermark.size[0]*SCALE_FRACTOR), int(watermark.size[1]*SCALE_FRACTOR)),
                                          Image.ANTIALIAS)
 
             paste_mask = watermark.split()[3].point(lambda i: i * TRANSPARENCY / 100.)
